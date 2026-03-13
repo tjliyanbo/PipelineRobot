@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>管道机器人控制终端</title>
+    <style>
+        body { font-family: 'Microsoft YaHei', 'Segoe UI', sans-serif; background: #1e1e1e; color: #fff; margin: 0; display: flex; height: 100vh; }
+        #sidebar { width: 300px; background: #252526; padding: 20px; border-right: 1px solid #333; }
+        #main { flex: 1; padding: 20px; display: flex; flex-direction: column; }
+        .card { background: #333; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+        h2 { margin-top: 0; font-size: 16px; color: #aaa; }
+        .value { font-size: 24px; font-weight: bold; color: #4CAF50; }
+        .btn { background: #007ACC; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; width: 100%; margin-bottom: 10px;}
+        .btn:hover { background: #005A9E; }
+        .btn-danger { background: #d32f2f; }
+        .btn-danger:hover { background: #b71c1c; }
+        .control-group { display: flex; gap: 10px; align-items: center; }
+        input[type="range"] { flex: 1; }
+        #log { height: 150px; overflow-y: auto; background: #000; font-family: 'Consolas', monospace; padding: 10px; border-radius: 4px; margin-top: auto;}
+        
+        #video-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #000;
+            overflow: hidden;
+            position: relative;
+        }
+        #video-feed {
+            max-width: 100%;
+            max-height: 100%;
+        }
+        .video-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(30, 30, 30, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #ccc;
+            font-size: 16px;
+            transition: opacity 0.3s ease, visibility 0.3s;
+            z-index: 5;
+            visibility: visible;
+            opacity: 1;
+        }
+        .video-overlay.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        .video-overlay svg {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 12px;
+            fill: #666;
+            transition: fill 0.3s;
+        }
+        .video-overlay:hover svg {
+            fill: #888;
+        }
+        .overlay-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.5);
+            color: white;
+            border: 1px solid white;
+            padding: 5px 10px;
+            cursor: pointer;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div id="sidebar">
+        <div class="card">
+            <h2>系统连接</h2>
+            <div id="status" style="margin-bottom: 10px; color: #ff5555;">未连接</div>
+            <button id="btn-connect" class="btn" onclick="connect()">连接管道机器人</button>
+        </div>
+        <div class="card">
+            <h2>视频监控</h2>
+            <button class="btn" id="btn-video" onclick="toggleVideo()">开启视频</button>
+            <button class="btn" onclick="takeScreenshot()">截图</button>
+        </div>
+        <div class="card">
+            <h2>实时遥测</h2>
+            <div>电池电量: <span id="battery" class="value">--</span> %</div>
+            <div>气压: <span id="pressure" class="value">--</span> kPa</div>
+            <div>温度: <span id="temp" class="value">--</span> °C</div>
+            <div>俯仰角: <span id="pitch" class="value">--</span> °</div>
+        </div>
+    </div>
+    <div id="main">
+        <div class="card" style="flex: 1; padding: 0;">
+            <div id="video-container">
+                <img id="video-feed" alt="无信号">
+                <div id="video-overlay" class="video-overlay">
+                    <div id="overlay-icon">
+                        <!-- Default Icon: Disconnected -->
+                        <svg viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,16.5L6.5,12L7.91,10.59L11,13.67L16.59,8.09L18,9.5L11,16.5Z" /></svg>
+                    </div>
+                    <div id="overlay-text">请连接远程管道机器人</div>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <h2>运动控制</h2>
+            <div class="control-group">
+                <span>速度:</span>
+                <input type="range" id="speed" min="-1.0" max="1.0" step="0.1" value="0" oninput="updateControl()">
+                <span id="speed-val">0.0</span>
+            </div>
+            <div class="control-group" style="margin-top: 10px;">
+                <span>转向:</span>
+                <input type="range" id="turn" min="-1.0" max="1.0" step="0.1" value="0" oninput="updateControl()">
+                <span id="turn-val">0.0</span>
+            </div>
+        </div>
+        <div id="log"></div>
+    </div>
+
+    <script src="renderer.js"></script>
+</body>
+</html>

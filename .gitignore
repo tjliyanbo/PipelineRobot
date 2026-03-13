@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+venv/
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyd
+
+# Electron
+host-app/userData/
+host-app/dist/
+host-app/out/
+host-app/.electron-cache/
+host-app/.cache/
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,12 @@
+{
+  "name": "robot-host-app",
+  "version": "1.0.0",
+  "description": "Host Control Software for Pipeline Robot",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron . --enable-logging"
+  },
+  "dependencies": {
+    "electron": "^28.0.0"
+  }
+}
