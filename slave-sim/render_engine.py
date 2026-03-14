@@ -214,9 +214,17 @@ class RenderEngine:
         glFlush()
         
         # Capture Frame
+        # Correctly capture 320x240 frame directly from 640x480 buffer by resizing during read or post-process?
+        # Actually, self.width is 640.
         buffer = glReadPixels(0, 0, self.width, self.height, GL_RGB, GL_UNSIGNED_BYTE)
         image = np.frombuffer(buffer, dtype=np.uint8)
         image = image.reshape((self.height, self.width, 3))
+        
+        # Resize image to match aspect ratio of 320x240 (4:3) if self.width/height is different
+        # Currently 640x480 is 4:3, so aspect is correct.
+        # But maybe we should render at 320x240 directly?
+        # RenderEngine is init with 640x480.
+        
         image = cv2.flip(image, 0) # OpenGL origin is bottom-left
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
         

@@ -141,18 +141,21 @@ class RobotSimulator:
                 
                 # Resize FIRST to ensure text is sharp on the final image
                 # 3D frames are detailed and large, so we downscale for transmission
+                # Use INTER_AREA for better downscaling quality (less aliasing)
                 img_small = cv2.resize(img, (320, 240), interpolation=cv2.INTER_AREA)
                 
                 # Draw Overlay Info (Battery, Speed) - Post-resize for sharpness
                 # Adjusted coordinates and font scale for 320x240 resolution
                 # Use LINE_AA for anti-aliasing
+                # Font Scale 0.5 is good for 320x240. 0.6 might be slightly large but readable.
+                # Ensure thickness is 1 for clarity.
                 cv2.putText(img_small, f"BAT: {self.state['battery']:.1f}%", (5, 20), 
-                           cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 1, cv2.LINE_AA)
-                cv2.putText(img_small, f"SPD: {self.state['speed']:.1f}", (5, 45), 
-                           cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 1, cv2.LINE_AA)
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1, cv2.LINE_AA)
+                cv2.putText(img_small, f"SPD: {self.state['speed']:.1f}", (5, 40), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1, cv2.LINE_AA)
                 
                 # Encode as JPEG with lower quality to ensure it fits
-                _, buffer = cv2.imencode('.jpg', img_small, [int(cv2.IMWRITE_JPEG_QUALITY), 60]) # Increased quality slightly since text is cleaner
+                _, buffer = cv2.imencode('.jpg', img_small, [int(cv2.IMWRITE_JPEG_QUALITY), 70]) # Quality 70 for sharper text
                 data = buffer.tobytes()
                 
                 try:
