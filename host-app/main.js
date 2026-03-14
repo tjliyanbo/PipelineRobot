@@ -55,9 +55,7 @@ function startUdpServer() {
   });
 
   udpServer.on('message', (msg, rinfo) => {
-    // Only process video frames if connected
-    if (!isConnected) return;
-
+    // Process video frames regardless of TCP connection state (Independent Video Link)
     // msg is the JPEG buffer
     if (mainWindow && !mainWindow.isDestroyed()) {
       // Convert to base64 for easy display in renderer

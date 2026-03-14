@@ -58,10 +58,10 @@ function updateConnectionUI(status) {
         elements.statusText.style.color = "#888";
         elements.btnConnect.innerText = "连接";
         
-        // Reset Video on disconnect
-        if (state.videoEnabled) {
-            toggleVideo(); 
-        }
+        // Independent Link: Do NOT auto-disable video on TCP disconnect
+        // if (state.videoEnabled) {
+        //     toggleVideo(); 
+        // }
     }
 }
 
@@ -95,9 +95,13 @@ window.api.onTelemetry((data) => {
 });
 
 window.api.onVideoFrame((base64Img) => {
-    if (state.videoEnabled) {
-        elements.videoFeed.src = `data:image/jpeg;base64,${base64Img}`;
+    // Auto-enable video UI if we are receiving frames
+    if (!state.videoEnabled) {
+        state.videoEnabled = true;
+        updateVideoUI();
     }
+    
+    elements.videoFeed.src = `data:image/jpeg;base64,${base64Img}`;
 });
 
 // User Actions
@@ -126,7 +130,7 @@ function emergencyStop() {
 
 function sendControlCommand(speed, turn) {
     state.move = { speed, turn };
-    window.api.sendControl(state.move);
+    window.api.sendControl({ ...state.move, light: state.lightEnabled });
     log(`发送指令: Speed=${speed}, Turn=${turn}`);
 }
 
@@ -176,7 +180,8 @@ elements.btnLight.addEventListener('click', () => {
     state.lightEnabled = !state.lightEnabled;
     elements.btnLight.classList.toggle('active', state.lightEnabled);
     log(`照明已${state.lightEnabled ? '开启' : '关闭'}`);
-    // Assuming there might be an API for this later, for now just UI toggle
+    // Send updated light state immediately
+    sendControlCommand(state.move.speed, state.move.turn);
 });
 
 // Initial Log

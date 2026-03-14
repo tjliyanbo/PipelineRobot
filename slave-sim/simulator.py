@@ -7,6 +7,7 @@ import zlib
 import cv2
 import numpy as np
 import socket
+from render_engine import RenderEngine
 
 # Configuration
 HOST = '127.0.0.1'
@@ -79,7 +80,8 @@ class RobotSimulator:
             "pitch": 0.0,
             "roll": 0.0,
             "status": "IDLE",
-            "video_enabled": False
+            "video_enabled": False,
+            "light_enabled": True
         }
         self.clients = set()
         self.running = True
@@ -87,6 +89,14 @@ class RobotSimulator:
         # UDP Video Socket
         self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.udp_addr = (HOST, UDP_VIDEO_PORT)
+        
+        # 3D Render Engine
+        try:
+            self.renderer = RenderEngine(640, 480)
+            print("3D Render Engine Initialized")
+        except Exception as e:
+            print(f"Failed to initialize 3D Engine: {e}")
+            self.renderer = None
 
     async def update_state(self):
         while self.running:
@@ -109,33 +119,37 @@ class RobotSimulator:
                     try:
                         writer.write(packet)
                         await writer.drain()
-                    except:
-                        self.clients.remove(writer)
-            await asyncio.sleep(0.05)
+                    except Exception as e:
+                        print(f"Telemetry send error: {e}")
+                        self.clients.discard(writer)
+            await asyncio.sleep(0.2) # Reduce rate to 5Hz to prevent congestion
 
     async def stream_video(self):
         frame_counter = 0
         while self.running:
-            if self.state["video_enabled"] and self.clients:
-                # Generate a dummy frame using OpenCV
-                img = np.zeros((480, 640, 3), np.uint8)
+            if self.state["video_enabled"]:
+                if self.renderer:
+                    # Use 3D Engine
+                    img = self.renderer.render(self.state)
+                else:
+                    # Fallback to simple OpenCV drawing
+                    img = np.zeros((480, 640, 3), np.uint8)
+                    offset = int(frame_counter * self.state["speed"] * 10) % 40
+                    for i in range(0, 640, 40):
+                        cv2.line(img, (i + offset, 0), (i + offset, 480), (50, 50, 50), 2)
                 
-                # Draw background based on speed (moving stripes effect)
-                offset = int(frame_counter * self.state["speed"] * 10) % 40
-                for i in range(0, 640, 40):
-                    cv2.line(img, (i + offset, 0), (i + offset, 480), (50, 50, 50), 2)
-                
-                # Draw text info
+                # Draw Overlay Info (Battery, Speed)
                 cv2.putText(img, f"BAT: {self.state['battery']:.1f}%", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
                 cv2.putText(img, f"SPD: {self.state['speed']:.1f}", (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
-                cv2.putText(img, time.strftime("%H:%M:%S"), (500, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 1)
                 
-                # Encode as JPEG
-                _, buffer = cv2.imencode('.jpg', img, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
+                # Resize to fit in UDP packet (max ~60KB safe)
+                # 3D frames are detailed and large, so we downscale for transmission
+                img_small = cv2.resize(img, (320, 240))
+                
+                # Encode as JPEG with lower quality to ensure it fits
+                _, buffer = cv2.imencode('.jpg', img_small, [int(cv2.IMWRITE_JPEG_QUALITY), 50])
                 data = buffer.tobytes()
                 
-                # Send via UDP (Handling MTU fragmentation if needed, but for simplicity sending single packet if small enough)
-                # Max UDP payload ~65KB. 640x480 JPEG at 80% is usually < 50KB.
                 try:
                     if len(data) < 60000:
                         self.udp_sock.sendto(data, self.udp_addr)
@@ -148,7 +162,7 @@ class RobotSimulator:
                 
                 frame_counter += 1
                 
-            await asyncio.sleep(0.04) # ~25 FPS
+            await asyncio.sleep(0.033) # ~30 FPS
 
     async def handle_client(self, reader, writer):
         addr = writer.get_extra_info('peername')
@@ -186,11 +200,13 @@ class RobotSimulator:
         finally:
             print(f"Connection closed {addr}")
             self.clients.discard(writer)
-            writer.close()
-            # Stop video when client disconnects
-            if not self.clients:
-                self.state["video_enabled"] = False
-                print("All clients disconnected, video disabled")
+            try:
+                writer.close()
+            except:
+                pass
+                
+            # Note: Video state is now independent of TCP connection
+            # We do NOT auto-disable video here anymore to support "independent links"
 
     def process_command(self, cmd_id, payload):
         print(f"Received Cmd: {cmd_id}, Payload: {payload}")
@@ -199,6 +215,8 @@ class RobotSimulator:
         elif cmd_id == 0x02: # Control
             self.state["speed"] = payload.get("speed", 0)
             self.state["turn"] = payload.get("turn", 0)
+            if "light" in payload:
+                self.state["light_enabled"] = bool(payload["light"])
             self.state["status"] = "MOVING" if self.state["speed"] != 0 else "IDLE"
         elif cmd_id == 0x10: # Video Control
             # Fix: Ensure payload key matches what host sends ("enabled") and value is boolean
