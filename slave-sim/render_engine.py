@@ -49,43 +49,68 @@ class RenderEngine:
         glLightf(GL_LIGHT0, GL_SPOT_CUTOFF, 30.0) # Narrows the beam
         glLightf(GL_LIGHT0, GL_SPOT_EXPONENT, 10.0) # Focuses the beam
         
-        # Ambient light (brighter so we can see without spotlight)
-        glLightModelfv(GL_LIGHT_MODEL_AMBIENT, [0.6, 0.6, 0.6, 1.0])
+        # Ambient light (High Key - Global Illumination approximation)
+        # Increased brightness significantly
+        glLightModelfv(GL_LIGHT_MODEL_AMBIENT, [0.8, 0.8, 0.85, 1.0])
         glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE)
         
-        # Fog for atmosphere/dust (lighter fog for visibility)
+        # Fog (Subtle, clean atmosphere)
         glEnable(GL_FOG)
-        glFogfv(GL_FOG_COLOR, [0.1, 0.1, 0.1, 1])
-        glFogf(GL_FOG_DENSITY, 0.04)
+        glFogfv(GL_FOG_COLOR, [0.8, 0.8, 0.85, 1]) # Bright Fog
+        glFogf(GL_FOG_DENSITY, 0.02) # Reduced density for clarity
         glHint(GL_FOG_HINT, GL_NICEST)
 
     def generate_texture(self):
-        # Generate procedural concrete sewer texture
+        # Generate procedural texture: Bright Metal/Ceramic Pipe (PBR-like simulation)
+        # Aim: 30-50% brighter, metallic/ceramic reflection
         size = 512
-        # Base noise (Lighter concrete/stone)
-        texture = np.random.randint(140, 190, (size, size, 3), dtype=np.uint8)
         
-        # Add "rings" (pipe joints)
-        for i in range(0, size, 64):
-            # Dark groove
-            cv2.line(texture, (0, i), (size, i), (80, 80, 80), 2)
-            # Water stain / moss around joints
-            stain_color = (70, 100, 70) # BGR - greenish moss
-            cv2.line(texture, (0, i+2), (size, i+2), stain_color, 4)
+        # 1. Base Color (Albedo): Bright Metal/Ceramic
+        # Increase brightness significantly. 
+        # BGR: (200, 200, 210) for clean bright metal/ceramic look
+        base = np.zeros((size, size, 3), dtype=np.uint8)
+        base[:, :] = (200, 200, 210) 
+        
+        # Add subtle noise for material realism (Grain)
+        noise = np.random.randint(-15, 15, (size, size, 3), dtype=np.int16)
+        texture = np.clip(base + noise, 0, 255).astype(np.uint8)
+
+        # 2. Specular/Roughness Simulation (Baked into texture for OpenGL fixed pipeline)
+        # We simulate "Metallic" by making the base texture have high contrast highlights
+        # and "Roughness" by blurring reflections.
+        
+        # Add "Rings" (Pipe joints) - cleaner, sharper for ceramic/metal
+        for i in range(0, size, 128):
+            # Dark groove (AO effect)
+            cv2.line(texture, (0, i), (size, i), (80, 80, 90), 3)
+            # Bright Highlight edge (Specular)
+            cv2.line(texture, (0, i+3), (size, i+3), (250, 250, 255), 2)
             
-        # Blur to make it look like smooth concrete
-        texture = cv2.GaussianBlur(texture, (7, 7), 0)
-        
-        # Add random "corrosion" or "water damage" spots
-        for _ in range(40):
+        # 3. Reflections / Environment Map Simulation
+        # Simulate light reflecting off the wet/smooth bottom
+        water_center = size // 2
+        # Wide, soft reflection strip
+        reflection_layer = np.zeros_like(texture)
+        cv2.rectangle(reflection_layer, (water_center - 40, 0), (water_center + 40, size), (50, 50, 60), -1)
+        texture = cv2.addWeighted(texture, 1.0, reflection_layer, 0.5, 0)
+
+        # 4. Details: Water droplets / Condensation (PBR micro-details)
+        for _ in range(100):
             x, y = random.randint(0, size), random.randint(0, size)
-            r = random.randint(5, 25)
-            color = (random.randint(50, 100), random.randint(80, 130), random.randint(100, 150))
-            cv2.circle(texture, (x, y), r, color, -1)
-            
-        # Add a water line at the bottom (assuming cylinder maps V around the circle)
-        # Texture wraps around. Let's add a darker, greenish band for the water flow path
-        cv2.rectangle(texture, (0, size - 100), (size, size), (60, 90, 80), -1)
+            r = random.randint(1, 3)
+            # Bright specular dots
+            cv2.circle(texture, (x, y), r, (240, 240, 250), -1)
+            # Dark AO shadow below droplet
+            cv2.circle(texture, (x, y+2), r, (100, 100, 110), -1)
+
+        # 5. Global Illumination / AO Baking
+        # Darken corners slightly for depth (Vignette)
+        # Create a gradient mask
+        X, Y = np.meshgrid(np.linspace(-1, 1, size), np.linspace(-1, 1, size))
+        radius = np.sqrt(X**2 + Y**2)
+        vignette = 1 - 0.3 * radius # Keep center bright
+        vignette = np.dstack([vignette]*3)
+        texture = (texture * vignette).astype(np.uint8)
 
         # Convert to OpenGL texture (RGB)
         texture_rgb = cv2.cvtColor(texture, cv2.COLOR_BGR2RGB)
@@ -162,15 +187,23 @@ class RenderEngine:
         glTranslatef(0, self.camera_z * 0.2, 0) 
         glMatrixMode(GL_MODELVIEW)
         
-        # Lighting Control
+        # Lighting Control (PBR High Key Setup)
         if light_on:
             glEnable(GL_LIGHT0)
-            glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 0.95, 0.8, 1.0])
-            glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
-            # Reduced attenuation for better visibility
-            glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, 0.1)
-            glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.02)
-            glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, 0.002)
+            # Strong Key Light (5500K - Cool White)
+            # Increased intensity to 1.5-2.0 equivalent
+            glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.5, 1.5, 1.6, 1.0]) 
+            # High Specular for Metallic look
+            glLightfv(GL_LIGHT0, GL_SPECULAR, [1.8, 1.8, 1.9, 1.0])
+            
+            # Reduced attenuation for broader, brighter coverage
+            glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, 0.2)
+            glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.01)
+            glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, 0.001)
+            
+            # High Shininess for smooth metal/ceramic
+            glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 100.0)
+            glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
         else:
             glDisable(GL_LIGHT0) # Turn off main light
             

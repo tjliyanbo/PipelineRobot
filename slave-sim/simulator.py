@@ -77,7 +77,7 @@ class RobotSimulator:
             "turn": 0.0,
             "pressure": 101.3,
             "temperature": 25.0,
-            "pitch": 0.0,
+            "humidity": 60.0,
             "roll": 0.0,
             "status": "IDLE",
             "video_enabled": False,
@@ -107,6 +107,7 @@ class RobotSimulator:
             
             self.state["temperature"] = 25.0 + random.uniform(-0.5, 0.5)
             self.state["pressure"] = 101.3 + random.uniform(-0.1, 0.1)
+            self.state["humidity"] = 60.0 + random.uniform(-2.0, 2.0)
             if self.state["battery"] < 0: self.state["battery"] = 0
             
             await asyncio.sleep(0.1)
@@ -138,16 +139,20 @@ class RobotSimulator:
                     for i in range(0, 640, 40):
                         cv2.line(img, (i + offset, 0), (i + offset, 480), (50, 50, 50), 2)
                 
-                # Draw Overlay Info (Battery, Speed)
-                cv2.putText(img, f"BAT: {self.state['battery']:.1f}%", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-                cv2.putText(img, f"SPD: {self.state['speed']:.1f}", (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
-                
-                # Resize to fit in UDP packet (max ~60KB safe)
+                # Resize FIRST to ensure text is sharp on the final image
                 # 3D frames are detailed and large, so we downscale for transmission
-                img_small = cv2.resize(img, (320, 240))
+                img_small = cv2.resize(img, (320, 240), interpolation=cv2.INTER_AREA)
+                
+                # Draw Overlay Info (Battery, Speed) - Post-resize for sharpness
+                # Adjusted coordinates and font scale for 320x240 resolution
+                # Use LINE_AA for anti-aliasing
+                cv2.putText(img_small, f"BAT: {self.state['battery']:.1f}%", (5, 20), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 1, cv2.LINE_AA)
+                cv2.putText(img_small, f"SPD: {self.state['speed']:.1f}", (5, 45), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 1, cv2.LINE_AA)
                 
                 # Encode as JPEG with lower quality to ensure it fits
-                _, buffer = cv2.imencode('.jpg', img_small, [int(cv2.IMWRITE_JPEG_QUALITY), 50])
+                _, buffer = cv2.imencode('.jpg', img_small, [int(cv2.IMWRITE_JPEG_QUALITY), 60]) # Increased quality slightly since text is cleaner
                 data = buffer.tobytes()
                 
                 try:
@@ -217,6 +222,12 @@ class RobotSimulator:
             self.state["turn"] = payload.get("turn", 0)
             if "light" in payload:
                 self.state["light_enabled"] = bool(payload["light"])
+            
+            # Handle Camera Reset (Yaw)
+            if payload.get("reset_yaw", False) and self.renderer:
+                self.renderer.yaw = 0.0
+                print("Camera Yaw Reset")
+                
             self.state["status"] = "MOVING" if self.state["speed"] != 0 else "IDLE"
         elif cmd_id == 0x10: # Video Control
             # Fix: Ensure payload key matches what host sends ("enabled") and value is boolean

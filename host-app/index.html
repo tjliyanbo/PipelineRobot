@@ -6,199 +6,456 @@
     <title>管道机器人控制系统</title>
     <style>
         :root {
-            --bg-color: #101020;
-            --card-bg: #1a1a2e;
-            --text-color: #e0e0e0;
-            --accent-color: #00f2ff;
-            --danger-color: #ff2a2a;
-            --success-color: #00ff88;
-            --border-color: #2a2a40;
+            /* Palette - Light Theme */
+            --bg-main: #FFFFFF;
+            --bg-card: #FFFFFF;
+            --bg-header: #FFFFFF;
+            --bg-footer: #FAFAFA;
+            
+            /* Text */
+            --text-primary: #1F1F1F;
+            --text-secondary: #595959;
+            --text-disabled: #BFBFBF;
+            --text-inverse: #FFFFFF;
+            
+            /* Brand & Functional */
+            --primary: #1890FF;
+            --primary-rgb: 24, 144, 255;
+            --accent: #1890FF; /* Replaced cyan with primary for visibility on white */
+            --success: #52C41A;
+            --warning: #FAAD14;
+            --error: #FF4D4F;
+            
+            /* Legacy/JS Compatibility */
+            --success-color: var(--success);
+
+            /* Borders & Shadows */
+            --border-color: #E8E8E8;
+            --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.08);
+            --shadow-float: 0 4px 12px rgba(0, 0, 0, 0.12);
+
+            /* Spacing */
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 16px;
+            --space-lg: 24px;
+            
+            /* Dimensions & Radius */
+            --radius-sm: 4px;
+            --radius-md: 6px;
+            --radius-lg: 8px;
+            --btn-height: 40px;
+            
+            /* Interactions */
+            --transition-speed: 200ms;
+            --opacity-hover: 0.85;
+            --opacity-active: 0.7;
+            --opacity-disabled: 0.4;
+        }
+
+        * {
+            box-sizing: border-box;
         }
 
         body {
-            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', Roboto, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-primary);
             margin: 0;
             height: 100vh;
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            font-size: 14px;
+            line-height: 1.5;
+            font-weight: 400;
         }
 
-        /* Header */
-        header {
-            height: 60px;
-            background-color: var(--card-bg);
+        /* SVG Icon Utility */
+        .icon {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+            vertical-align: middle;
+            margin-right: var(--space-sm);
+        }
+        .icon-large {
+            width: 24px;
+            height: 24px;
+            margin-right: 0;
+        }
+
+        /* Header - Application Title */
+        .app-header {
+            height: 64px;
+            background-color: var(--bg-header);
             border-bottom: 1px solid var(--border-color);
             display: flex;
             align-items: center;
-            padding: 0 20px;
-            justify-content: space-between;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            padding: 0 var(--space-lg);
+            justify-content: flex-start;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            z-index: 100;
         }
 
-        .header-title {
-            font-size: 24px;
-            font-weight: bold;
-            color: var(--accent-color);
-            letter-spacing: 1px;
-        }
-
-        .header-controls {
+        .app-title {
+            font-size: 26px; /* Target Size: > 18px (panel title) */
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: -0.5px;
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: var(--space-md);
+        }
+
+        .app-logo {
+            width: 36px; /* Target Size: 1.5x of 24px */
+            height: 36px;
+            color: var(--primary);
+            fill: currentColor;
+            margin-right: 0;
         }
 
         .status-indicator {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: var(--space-sm);
             font-size: 14px;
+            color: var(--text-secondary);
+            background: rgba(0, 0, 0, 0.04);
+            padding: 4px 12px;
+            border-radius: 20px;
+            /* Make it fit inside the card */
+            align-self: flex-start; 
         }
 
         .status-dot {
-            width: 10px;
-            height: 10px;
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
-            background-color: #555;
-            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+            background-color: var(--text-disabled);
+            transition: background-color 0.3s, box-shadow 0.3s;
         }
 
         .status-dot.connected {
-            background-color: var(--success-color);
-            box-shadow: 0 0 8px var(--success-color);
+            background-color: var(--success);
+            box-shadow: 0 0 4px var(--success);
+        }
+
+        /* Buttons */
+        button {
+            font-family: inherit;
+            border: none;
+            cursor: pointer;
+            transition: all var(--transition-speed) ease-out;
+            outline: none;
+            font-size: 14px;
+        }
+        
+        button:disabled {
+            opacity: var(--opacity-disabled);
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: #FFFFFF;
+            font-weight: 500;
+            height: var(--btn-height);
+            padding: 0 20px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 0 rgba(0,0,0,0.04);
+        }
+        
+        .btn-primary:hover {
+            opacity: var(--opacity-hover);
+        }
+        
+        .btn-primary:active {
+            opacity: var(--opacity-active);
         }
 
         .btn-emergency {
-            background-color: var(--danger-color);
-            color: white;
-            border: none;
-            padding: 8px 20px;
-            border-radius: 4px;
-            font-weight: bold;
-            cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: all 0.2s;
-            box-shadow: 0 0 10px rgba(255, 42, 42, 0.3);
+            background-color: rgba(255, 77, 79, 0.1);
+            color: var(--error);
+            border: 1px solid var(--error);
+            padding: 0 20px;
+            height: var(--btn-height);
+            border-radius: var(--radius-md);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
         }
 
         .btn-emergency:hover {
-            background-color: #cc0000;
-            box-shadow: 0 0 15px rgba(255, 42, 42, 0.6);
+            background-color: var(--error);
+            color: white;
+            box-shadow: 0 2px 8px rgba(255, 77, 79, 0.4);
         }
 
         .btn-emergency:active {
-            transform: scale(0.95);
+            transform: scale(0.98);
         }
 
-        /* Main Content */
+        /* Main Layout */
         main {
             flex: 1;
             display: grid;
             grid-template-columns: 2fr 1fr 1fr;
-            gap: 20px;
-            padding: 20px;
-            min-height: 0; /* Prevent grid blowout */
+            gap: var(--space-md);
+            padding: var(--space-md);
+            min-height: 0;
+            background-color: #F0F2F5; /* Subtle gray background for contrast with white panels */
+        }
+
+        @media (max-width: 1024px) {
+            main {
+                grid-template-columns: 1fr 1fr;
+                grid-template-rows: auto 1fr;
+            }
+            .panel-video {
+                grid-column: 1 / -1;
+                height: 400px;
+            }
         }
 
         .panel {
-            background-color: var(--card-bg);
-            border-radius: 8px;
+            background-color: var(--bg-card);
+            border-radius: var(--radius-lg);
             border: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            box-shadow: var(--shadow-card);
+        }
+
+        /* Panel Specific Backgrounds */
+        .panel-video {
+            background-color: #F6FFED; /* Unified with sensors */
+            grid-column: 1 / 2;
+        }
+
+        .panel-sensors {
+            background-color: #F6FFED; /* Light Green tint */
+        }
+
+        .panel-controls {
+            background-color: #F6FFED; /* Unified with sensors */
         }
 
         .panel-header {
-            padding: 10px 15px;
-            background-color: rgba(255,255,255,0.05);
-            font-size: 14px;
-            font-weight: bold;
-            color: #aaa;
-            border-bottom: 1px solid var(--border-color);
+            padding: var(--space-md);
+            background-color: transparent; /* Transparent to show panel tint */
+            font-size: 18px; /* Increased size */
+            font-weight: 600;
+            color: var(--text-primary);
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+            display: flex;
+            align-items: center;
         }
 
-        /* Video Section */
+        /* Generic Card Style (referencing sensor-card) */
+        .content-card {
+            background-color: #FFFFFF;
+            border-radius: var(--radius-md);
+            padding: var(--space-md);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Video Container - Modified to use content-card style */
         #video-container {
             flex: 1;
+            /* Inherit content-card styles */
+            background-color: #FFFFFF;
+            border-radius: var(--radius-lg); /* Slightly larger radius for video */
+            border: 1px solid var(--border-color);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+            padding: var(--space-xs); /* Small padding around the black frame */
+            
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        /* Inner black frame for video */
+        .video-frame {
             background-color: #000;
+            border-radius: var(--radius-md);
+            flex: 1;
             position: relative;
             display: flex;
             justify-content: center;
             align-items: center;
+            overflow: hidden;
+            width: 100%;
         }
 
         #video-feed {
             width: 100%;
             height: 100%;
             object-fit: contain;
+            display: none;
         }
 
         .video-placeholder {
             position: absolute;
-            color: #555;
-            font-size: 18px;
+            color: #888;
+            font-size: 16px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 10px;
+            gap: var(--space-md);
+            pointer-events: none;
         }
         
         .video-overlay-btn {
             position: absolute;
-            top: 10px;
-            right: 10px;
-            background: rgba(0,0,0,0.6);
-            border: 1px solid rgba(255,255,255,0.2);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             color: white;
-            padding: 5px 10px;
-            cursor: pointer;
+            padding: 12px 24px;
+            border-radius: 999px; /* Pill shape */
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 16px;
+            font-weight: 500;
             z-index: 10;
-            border-radius: 4px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        .video-overlay-btn:hover {
+            background: rgba(0, 0, 0, 0.8);
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: translate(-50%, -50%) scale(1.05);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        .video-overlay-btn:active {
+            transform: translate(-50%, -50%) scale(0.95);
+        }
+
+        /* Video Playing State: Hide button by default, show on hover */
+        .video-playing .video-overlay-btn {
+            opacity: 0;
+            pointer-events: none;
+            transform: translate(-50%, -50%) scale(0.9);
+        }
+
+        .video-playing:hover .video-overlay-btn {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .video-aspect-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 20;
+            transition: all 0.2s;
+            opacity: 0; /* Hidden by default, shown on hover */
+        }
+
+        /* Show aspect button on container hover, regardless of video state */
+        #video-container:hover .video-aspect-btn {
+            opacity: 1;
+        }
+
+        .video-aspect-btn:hover {
+            background: rgba(0, 0, 0, 0.7);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: scale(1.1);
         }
 
         /* Sensors Grid */
         .sensors-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            grid-template-rows: 1fr 1fr;
-            gap: 15px;
-            padding: 15px;
+            grid-template-columns: 1fr;
+            grid-template-rows: repeat(4, 1fr);
+            gap: var(--space-md);
+            padding: var(--space-md);
             height: 100%;
+            overflow-y: auto;
         }
 
         .sensor-card {
-            background-color: rgba(255,255,255,0.03);
-            border-radius: 6px;
-            padding: 15px;
+            background-color: #FFFFFF;
+            border-radius: var(--radius-md);
+            padding: var(--space-md);
             display: flex;
             flex-direction: column;
             justify-content: space-between;
             border: 1px solid var(--border-color);
+            position: relative;
+            transition: all var(--transition-speed);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+        }
+        
+        .sensor-card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(24, 144, 255, 0.15);
+        }
+
+        .sensor-icon-bg {
+            position: absolute;
+            top: 50%;
+            right: var(--space-md);
+            transform: translateY(-50%);
+            opacity: 0.08;
+            width: 64px;
+            height: 64px;
+            fill: var(--primary);
+            pointer-events: none;
         }
 
         .sensor-label {
-            font-size: 12px;
-            color: #888;
-            text-transform: uppercase;
+            font-size: 13px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            margin-bottom: var(--space-xs);
+            font-weight: 500;
         }
 
         .sensor-value {
-            font-size: 28px;
-            font-weight: bold;
-            color: var(--accent-color);
-            text-align: right;
+            font-size: 32px;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-family: 'Segoe UI', Roboto, monospace;
+            z-index: 1;
+            line-height: 1.2;
         }
 
         .sensor-unit {
             font-size: 14px;
-            color: #aaa;
-            margin-left: 5px;
+            color: var(--text-secondary);
+            font-weight: 400;
+            margin-left: var(--space-xs);
         }
 
         /* Controls Section */
@@ -207,170 +464,289 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 20px;
-            gap: 30px;
+            padding: var(--space-md);
+            gap: var(--space-lg);
             height: 100%;
         }
 
         .d-pad {
             display: grid;
-            grid-template-columns: repeat(3, 60px);
-            grid-template-rows: repeat(3, 60px);
-            gap: 5px;
+            grid-template-columns: repeat(3, 80px);
+            grid-template-rows: repeat(3, 80px);
+            gap: var(--space-sm);
         }
 
         .d-pad-btn {
-            background-color: #2a2a40;
-            border: none;
-            border-radius: 8px;
-            color: white;
-            font-size: 24px;
+            background-color: #FFFFFF;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            color: var(--text-secondary);
+            font-size: 32px;
             cursor: pointer;
-            transition: background 0.1s;
+            transition: all 0.1s;
             display: flex;
             justify-content: center;
             align-items: center;
-            box-shadow: 0 4px 0 #151520;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            user-select: none;
+            -webkit-user-select: none;
         }
 
-        .d-pad-btn:active {
-            background-color: var(--accent-color);
-            color: black;
-            transform: translateY(4px);
-            box-shadow: none;
+        .d-pad-btn:hover {
+            color: var(--primary);
+            border-color: var(--primary);
+            background-color: rgba(24, 144, 255, 0.05);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(24, 144, 255, 0.1);
         }
 
-        .d-pad-btn.active {
-            background-color: var(--accent-color);
-            color: black;
-            transform: translateY(4px);
+        .d-pad-btn:active, .d-pad-btn.active {
+            background-color: var(--primary);
+            color: #FFFFFF;
+            transform: translateY(1px);
             box-shadow: none;
+            border-color: var(--primary);
         }
         
         /* Grid placement for D-pad */
         .btn-up { grid-column: 2; grid-row: 1; }
         .btn-left { grid-column: 1; grid-row: 2; }
-        .btn-stop { grid-column: 2; grid-row: 2; background-color: #3d3d5c; font-size: 14px; font-weight: bold; }
+        .btn-reset { 
+            grid-column: 2; 
+            grid-row: 2; 
+            background-color: #FAFAFA; 
+            font-size: 12px; 
+            font-weight: 500;
+            flex-direction: column;
+            gap: 2px;
+            color: var(--text-secondary);
+        }
         .btn-right { grid-column: 3; grid-row: 2; }
         .btn-down { grid-column: 2; grid-row: 3; }
 
+        .btn-reset:active {
+            background-color: #E8E8E8;
+            color: var(--text-primary);
+        }
+
         .aux-controls {
             display: flex;
-            gap: 15px;
+            gap: var(--space-md);
             width: 100%;
             justify-content: center;
         }
 
         .aux-btn {
-            background-color: #2a2a40;
-            border: 1px solid #444;
-            color: #ccc;
-            padding: 10px 20px;
-            border-radius: 4px;
+            background-color: rgba(24, 144, 255, 0.1);
+            border: 1px solid rgba(24, 144, 255, 0.2);
+            color: var(--primary);
+            padding: 0 20px;
+            height: var(--btn-height);
+            border-radius: var(--radius-md);
             cursor: pointer;
             flex: 1;
             text-align: center;
-            transition: all 0.2s;
+            transition: all var(--transition-speed);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 500;
+        }
+
+        .aux-btn:hover {
+            background-color: rgba(24, 144, 255, 0.2);
+            opacity: var(--opacity-hover);
         }
 
         .aux-btn.active {
-            background-color: var(--accent-color);
-            color: #000;
+            background-color: var(--warning);
+            color: #FFFFFF;
+            border-color: var(--warning);
             font-weight: bold;
-            box-shadow: 0 0 10px var(--accent-color);
+            box-shadow: 0 4px 10px rgba(250, 173, 20, 0.4);
         }
 
         /* Footer Log */
         footer {
             height: 120px;
-            background-color: #000;
+            background-color: var(--bg-footer);
             border-top: 1px solid var(--border-color);
-            padding: 10px;
-            font-family: 'Consolas', monospace;
+            padding: var(--space-sm) var(--space-md);
+            font-family: 'Consolas', 'Monaco', monospace;
             font-size: 12px;
             overflow-y: auto;
-            color: #00ff00;
+            color: var(--text-secondary);
         }
-
+        
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.02);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #D9D9D9;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #BFBFBF;
+        }
+        
+        /* Log Colors */
         .log-entry {
-            margin-bottom: 4px;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            padding-bottom: 2px;
+            padding: 4px 0;
+            border-bottom: 1px solid #F0F0F0;
+            display: flex;
         }
-
         .log-time {
-            color: #666;
-            margin-right: 10px;
+            color: var(--text-disabled);
+            margin-right: var(--space-md);
+            min-width: 60px;
         }
+        .log-content { flex: 1; }
+        
+        .log-info .log-content { color: #1890FF; }
+        .log-success .log-content { color: #52C41A; }
+        .log-warning .log-content { color: #FAAD14; }
+        .log-error .log-content { color: #FF4D4F; font-weight: 600; }
+
     </style>
 </head>
 <body>
 
-    <header>
-        <div class="header-title">管道机器人控制系统</div>
-        <div class="header-controls">
-            <div class="status-indicator">
-                <div id="status-dot" class="status-dot"></div>
-                <span id="status-text">未连接</span>
-            </div>
-            <button id="btn-connect" class="aux-btn" style="padding: 5px 15px;">连接</button>
-            <button id="btn-estop" class="btn-emergency">紧急停止</button>
+    <header class="app-header">
+        <div class="app-title">
+            <!-- Robot Icon -->
+            <svg class="app-logo" viewBox="0 0 24 24"><path d="M12,2C12,2 8,5 8,9V11H5V13H8V15H6V17H8L8,19C8,21.5 11,22 12,22C13,22 16,21.5 16,19V17H18V15H16V13H19V11H16V9C16,5 12,2 12,2M12,4C13.5,4 14,6 14,8H10C10,6 10.5,4 12,4Z" /></svg>
+            管道机器人控制系统
         </div>
     </header>
 
     <main>
         <!-- Left: Video Feed -->
-        <div class="panel">
-            <div class="panel-header">实时视频</div>
+        <div class="panel panel-video">
+            <div class="panel-header">
+                <svg class="icon" viewBox="0 0 24 24" style="color: #1890FF;"><path d="M17,10.5V7A1,1 0 0,0 16,6H4A1,1 0 0,0 3,7V17A1,1 0 0,0 4,18H16A1,1 0 0,0 17,17V13.5L21,17.5V6.5L17,10.5Z" /></svg>
+                实时视频
+            </div>
             <div id="video-container">
-                <button id="btn-video-toggle" class="video-overlay-btn">开启视频</button>
-                <img id="video-feed" style="display: none;">
-                <div id="video-placeholder" class="video-placeholder">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 10H3V8h2v4h2V8h2v4h2V8h2v4h2V8h2v4h2V8h2v8z"/>
-                    </svg>
-                    <span>等待视频流...</span>
+                <div class="video-frame">
+                    <button id="btn-video-aspect" class="video-aspect-btn" title="切换画面比例 (Fill/Fit)">
+                        <!-- Default Icon: Fit (Contain) -> Click to switch to Fill -->
+                         <svg viewBox="0 0 24 24"><path d="M19,12H17V15H14V17H19V12M7,9H5V12H2V14H5V17H7V14H10V12H7V9M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3Z" /></svg>
+                    </button>
+                    <button id="btn-video-toggle" class="video-overlay-btn" aria-label="Toggle Video Stream">
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M17,10.5V7A1,1 0 0,0 16,6H4A1,1 0 0,0 3,7V17A1,1 0 0,0 4,18H16A1,1 0 0,0 17,17V13.5L21,17.5V6.5L17,10.5Z" /></svg>
+                        <span>开启视频</span>
+                    </button>
+                    <img id="video-feed" alt="Video Feed">
+                    <div id="video-placeholder" class="video-placeholder">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" style="opacity: 0.5;">
+                            <path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 10H3V8h2v4h2V8h2v4h2V8h2v4h2V8h2v4h2V8h2v8z"/>
+                        </svg>
+                        <span>等待视频流...</span>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Middle: Sensors -->
-        <div class="panel">
-            <div class="panel-header">传感器数据</div>
+        <div class="panel panel-sensors">
+            <div class="panel-header">
+                <svg class="icon" viewBox="0 0 24 24" style="color: #52C41A;"><path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12C4,14.63 5.27,16.96 7.25,18.43L8.67,17C7.03,15.85 6,14.04 6,12A6,6 0 0,1 12,6C14.04,6 15.85,7.03 17,8.67L18.43,7.25C16.96,5.27 14.63,4 12,4M12,8A4,4 0 0,0 8,12C8,13.31 8.63,14.47 9.61,15.21L11.04,13.79C10.39,13.34 10,12.71 10,12A2,2 0 0,1 12,10C12.71,10 13.34,10.39 13.79,11.04L15.21,9.61C14.47,8.63 13.31,8 12,8Z" /></svg>
+                传感器数据
+            </div>
             <div class="sensors-grid">
                 <div class="sensor-card">
-                    <div class="sensor-label">温度 (Temperature)</div>
+                    <!-- Thermometer Icon -->
+                    <svg class="sensor-icon-bg" viewBox="0 0 24 24"><path d="M15,13V5A3,3 0 0,0 9,5V13A5,5 0 1,0 15,13M12,4A1,1 0 0,1 13,5V12H11V5A1,1 0 0,1 12,4Z" /></svg>
+                    <div class="sensor-label">
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M15,13V5A3,3 0 0,0 9,5V13A5,5 0 1,0 15,13M12,4A1,1 0 0,1 13,5V12H11V5A1,1 0 0,1 12,4Z" /></svg>
+                        温度 (Temp)
+                    </div>
                     <div class="sensor-value"><span id="val-temp">--</span><span class="sensor-unit">°C</span></div>
                 </div>
                 <div class="sensor-card">
-                    <div class="sensor-label">气压 (Pressure)</div>
+                    <!-- Humidity/Water Icon -->
+                    <svg class="sensor-icon-bg" viewBox="0 0 24 24"><path d="M12,20A6,6 0 0,1 6,14C6,10 12,3.25 12,3.25C12,3.25 18,10 18,14A6,6 0 0,1 12,20Z" /></svg>
+                    <div class="sensor-label">
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M12,20A6,6 0 0,1 6,14C6,10 12,3.25 12,3.25C12,3.25 18,10 18,14A6,6 0 0,1 12,20Z" /></svg>
+                        湿度 (Humidity)
+                    </div>
+                    <div class="sensor-value"><span id="val-humidity">--</span><span class="sensor-unit">%</span></div>
+                </div>
+                <div class="sensor-card">
+                    <!-- Pressure Icon -->
+                    <svg class="sensor-icon-bg" viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12H6.9A5.1,5.1 0 0,1 12,6.9V4M12,20A8,8 0 0,0 20,12H17.1A5.1,5.1 0 0,1 12,17.1V20M12,15A3,3 0 0,0 15,12H12V15Z" /></svg>
+                    <div class="sensor-label">
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12H6.9A5.1,5.1 0 0,1 12,6.9V4M12,20A8,8 0 0,0 20,12H17.1A5.1,5.1 0 0,1 12,17.1V20M12,15A3,3 0 0,0 15,12H12V15Z" /></svg>
+                        气压 (Pressure)
+                    </div>
                     <div class="sensor-value"><span id="val-pressure">--</span><span class="sensor-unit">kPa</span></div>
                 </div>
                 <div class="sensor-card">
-                    <div class="sensor-label">电池 (Battery)</div>
+                    <!-- Battery Icon -->
+                    <svg class="sensor-icon-bg" viewBox="0 0 24 24"><path d="M16.67,4H15V2H9V4H7.33A1.33,1.33 0 0,0 6,5.33V20.67C6,21.4 6.6,22 7.33,22H16.67A1.33,1.33 0 0,0 18,20.67V5.33C18,4.6 17.4,4 16.67,4Z" /></svg>
+                    <div class="sensor-label">
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M16.67,4H15V2H9V4H7.33A1.33,1.33 0 0,0 6,5.33V20.67C6,21.4 6.6,22 7.33,22H16.67A1.33,1.33 0 0,0 18,20.67V5.33C18,4.6 17.4,4 16.67,4Z" /></svg>
+                        电池 (Battery)
+                    </div>
                     <div class="sensor-value"><span id="val-battery">--</span><span class="sensor-unit">%</span></div>
-                </div>
-                <div class="sensor-card">
-                    <div class="sensor-label">俯仰角 (Pitch)</div>
-                    <div class="sensor-value"><span id="val-pitch">--</span><span class="sensor-unit">°</span></div>
                 </div>
             </div>
         </div>
 
         <!-- Right: Controls -->
-        <div class="panel">
-            <div class="panel-header">操作控制</div>
+        <div class="panel panel-controls">
+            <div class="panel-header">
+                <svg class="icon" viewBox="0 0 24 24" style="color: #FAAD14;"><path d="M21,9H15V15H21V9M21,17H15V21H21V17M11,9H5V21H11V9M21,3H3A2,2 0 0,0 1,5V21A2,2 0 0,0 3,23H21A2,2 0 0,0 23,21V5A2,2 0 0,0 21,3Z" /></svg>
+                操作控制
+            </div>
             <div class="controls-container">
-                <div class="d-pad">
-                    <button class="d-pad-btn btn-up" id="btn-forward" title="前进">▲</button>
-                    <button class="d-pad-btn btn-left" id="btn-left" title="左转">◀</button>
-                    <button class="d-pad-btn btn-stop" id="btn-stop-move" title="停止">STOP</button>
-                    <button class="d-pad-btn btn-right" id="btn-right" title="右转">▶</button>
-                    <button class="d-pad-btn btn-down" id="btn-backward" title="后退">▼</button>
+                <!-- Connection Control Card -->
+                <div class="content-card" style="width: 100%; gap: var(--space-md); align-items: center;">
+                    <div class="status-indicator" style="width: 100%; justify-content: center; background: none; padding: 0;">
+                        <div id="status-dot" class="status-dot"></div>
+                        <span id="status-text">离线</span>
+                    </div>
+                    <button id="btn-connect" class="btn-primary" style="width: 100%;">
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M19,15H13V3H19M11,15H5V3H11M21,3H3A2,2 0 0,0 1,5V19A2,2 0 0,0 3,21H21A2,2 0 0,0 23,19V5A2,2 0 0,0 21,3Z" /></svg>
+                        连接
+                    </button>
                 </div>
 
-                <div class="aux-controls">
-                    <button class="aux-btn" id="btn-light">照明开关</button>
+                <!-- Motion Control Card -->
+                <div class="content-card" style="flex: 1; width: 100%; align-items: center; justify-content: center; gap: var(--space-lg);">
+                    <div class="d-pad">
+                        <button class="d-pad-btn btn-up" id="btn-forward" title="前进">
+                            <svg class="icon icon-large" viewBox="0 0 24 24"><path d="M7.41,15.41L12,10.83L16.59,15.41L18,14L12,8L6,14L7.41,15.41Z" /></svg>
+                        </button>
+                        <button class="d-pad-btn btn-left" id="btn-left" title="左转">
+                            <svg class="icon icon-large" viewBox="0 0 24 24"><path d="M15.41,16.58L10.83,12L15.41,7.41L14,6L8,12L14,18L15.41,16.58Z" /></svg>
+                        </button>
+                        
+                        <!-- Reset Button -->
+                        <button class="d-pad-btn btn-reset" id="btn-reset" title="复位">
+                            <svg class="icon" viewBox="0 0 24 24" style="margin:0;"><path d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z" /></svg>
+                            <span>复位</span>
+                        </button>
+
+                        <button class="d-pad-btn btn-right" id="btn-right" title="右转">
+                            <svg class="icon icon-large" viewBox="0 0 24 24"><path d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z" /></svg>
+                        </button>
+                        <button class="d-pad-btn btn-down" id="btn-backward" title="后退">
+                            <svg class="icon icon-large" viewBox="0 0 24 24"><path d="M7.41,8.59L12,13.17L16.59,8.59L18,10L12,16L6,10L7.41,8.59Z" /></svg>
+                        </button>
+                    </div>
+
+                    <div class="aux-controls">
+                        <button class="aux-btn" id="btn-light">
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M12,2A7,7 0 0,0 5,9C5,11.38 6.19,13.47 8,14.74V17A1,1 0 0,0 9,18H15A1,1 0 0,0 16,17V14.74C17.81,13.47 19,11.38 19,9A7,7 0 0,0 12,2M9,21A1,1 0 0,0 10,22H14A1,1 0 0,0 15,21V20H9V21Z" /></svg>
+                            照明开关
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -378,7 +754,10 @@
 
     <footer id="log-container">
         <!-- Logs will appear here -->
-        <div class="log-entry"><span class="log-time">--:--:--</span> 系统初始化完成</div>
+        <div class="log-entry log-success">
+            <span class="log-time">--:--:--</span>
+            <span class="log-content">系统初始化完成</span>
+        </div>
     </footer>
 
     <script src="renderer.js"></script>
