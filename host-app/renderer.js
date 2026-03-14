@@ -15,6 +15,9 @@ const elements = {
     videoContainer: document.getElementById('video-container'),
     btnVideoToggle: document.getElementById('btn-video-toggle'),
     btnVideoAspect: document.getElementById('btn-video-aspect'),
+    btnRealPhoto: document.getElementById('btn-real-photo'),
+    btnSnapshot: document.getElementById('btn-snapshot'),
+    btnRecord: document.getElementById('btn-record'),
     videoFeed: document.getElementById('video-feed'),
     videoPlaceholder: document.getElementById('video-placeholder'),
     btnLight: document.getElementById('btn-light'),
@@ -219,8 +222,9 @@ function setupButton(btn, speed, turn) {
 }
 
 // Bind D-Pad
-setupButton(elements.controls.forward, 1.0, 0.0);
-setupButton(elements.controls.backward, -1.0, 0.0);
+// Reduced speed to 0.5 (was 1.0) for smoother control
+setupButton(elements.controls.forward, 0.5, 0.0);
+setupButton(elements.controls.backward, -0.5, 0.0);
 setupButton(elements.controls.left, 0.0, 1.0);  // Left turns CCW (Positive Yaw)
 setupButton(elements.controls.right, 0.0, -1.0);  // Right turns CW (Negative Yaw)
 
@@ -234,6 +238,20 @@ elements.controls.reset.addEventListener('click', () => {
 elements.btnConnect.addEventListener('click', toggleConnect);
 elements.btnVideoToggle.addEventListener('click', toggleVideo);
 elements.btnVideoAspect.addEventListener('click', toggleAspectRatio);
+elements.btnRealPhoto.addEventListener('click', () => {
+    window.api.toggleRealPhoto();
+    log("切换显示模式 (真实/CG)", "info");
+});
+elements.btnSnapshot.addEventListener('click', () => {
+    window.api.takeSnapshot();
+    log("发送截图指令", "success");
+});
+elements.btnRecord.addEventListener('click', () => {
+    window.api.toggleRecording();
+    elements.btnRecord.classList.toggle('recording');
+    const isRecording = elements.btnRecord.classList.contains('recording');
+    log(isRecording ? "开始录制" : "停止录制", isRecording ? "warning" : "success");
+});
 
 function toggleAspectRatio() {
     state.videoFit = state.videoFit === 'contain' ? 'fill' : 'contain';

@@ -5,6 +5,9 @@ contextBridge.exposeInMainWorld('api', {
   disconnect: () => ipcRenderer.invoke('disconnect'),
   sendControl: (data) => ipcRenderer.invoke('control', data),
   setVideo: (enabled) => ipcRenderer.invoke('video-control', enabled),
+  toggleRealPhoto: () => ipcRenderer.invoke('toggle-real-photo'),
+  takeSnapshot: () => ipcRenderer.invoke('snapshot'),
+  toggleRecording: () => ipcRenderer.invoke('toggle-recording'),
   onTelemetry: (callback) => ipcRenderer.on('telemetry-data', (event, value) => callback(value)),
   onStatus: (callback) => ipcRenderer.on('connection-status', (event, value) => callback(value)),
   onVideoFrame: (callback) => ipcRenderer.on('video-frame', (event, base64Img) => callback(base64Img))

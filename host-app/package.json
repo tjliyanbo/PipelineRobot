@@ -4,7 +4,7 @@
   "description": "Host Control Software for Pipeline Robot",
   "main": "main.js",
   "scripts": {
-    "start": "electron . --enable-logging"
+    "start": "electron . --enable-logging --no-sandbox --disable-gpu"
   },
   "dependencies": {
     "electron": "^28.0.0"

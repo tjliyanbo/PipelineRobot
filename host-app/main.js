@@ -217,3 +217,18 @@ ipcMain.handle('video-control', (event, enabled) => {
   console.log(`IPC: video-control invoked with enabled=${enabled}`);
   sendPacket(0x10, { enabled });
 });
+
+ipcMain.handle('toggle-real-photo', () => {
+  console.log('IPC: toggle-real-photo');
+  sendPacket(0x11, {});
+});
+
+ipcMain.handle('snapshot', () => {
+  console.log('IPC: snapshot');
+  sendPacket(0x12, {});
+});
+
+ipcMain.handle('toggle-recording', () => {
+  console.log('IPC: toggle-recording');
+  sendPacket(0x13, {});
+});

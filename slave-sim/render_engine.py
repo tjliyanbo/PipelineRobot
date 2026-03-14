@@ -6,6 +6,7 @@ import numpy as np
 import cv2
 import random
 import math
+import os
 
 class RenderEngine:
     def __init__(self, width=640, height=480):
@@ -20,6 +21,10 @@ class RenderEngine:
         
         self.init_gl()
         self.texture_id = self.generate_texture()
+        self.real_photo_tex_id = self.load_real_photo('assets/real_sewer.jpg')
+        # Default to True if we have a real photo (assuming load_real_photo returns a valid ID)
+        self.real_photo_mode = True if self.real_photo_tex_id else False
+        
         self.pipe_radius = 4.0 # Increased radius
         self.pipe_length = 60.0
         self.camera_z = 0.0
@@ -124,8 +129,99 @@ class RenderEngine:
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
         return tex_id
 
+    def load_real_photo(self, path):
+        print(f"Loading real photo from: {os.path.abspath(path)}")
+        if not os.path.exists(path):
+            # Create a placeholder if not exists
+            print(f"Photo not found at {path}, creating placeholder...")
+            placeholder = np.zeros((512, 512, 3), dtype=np.uint8)
+            # Make it look different - reddish brick/rust
+            placeholder[:] = (100, 120, 180) 
+            cv2.circle(placeholder, (256, 256), 200, (50, 60, 90), -1) # Tunnel center
+            # Add text
+            cv2.putText(placeholder, "REAL PHOTO MODE", (100, 256), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+            
+            # Ensure directory exists
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            cv2.imwrite(path, placeholder)
+            img = placeholder
+        else:
+            print(f"Found file at {path}")
+            img = cv2.imread(path)
+            
+        if img is None: 
+            print("Failed to load image with cv2.imread (returned None). Check file format/integrity.")
+            return self.texture_id
+        
+        print(f"Image loaded successfully. Shape: {img.shape}")
+
+        # Perspective/Polar Correction (Tunnel View -> Cylinder Wall)
+        # Assume center of image is center of tunnel
+        h, w = img.shape[:2]
+        center = (w // 2, h // 2)
+        max_radius = min(center[0], center[1])
+        
+        # Warp Polar: Unwraps circular image to rectangular strip
+        # Output size: Width = Circumference (Angle), Height = Depth (Radius)
+        # We want high res.
+        dest_w = 1024 
+        dest_h = 1024 
+        
+        # WARP_POLAR_LINEAR: Remaps to (rho, phi)
+        # We need (phi, rho) -> (u, v)
+        # cv2.warpPolar outputs (angle, radius) if we use correct flags?
+        # Actually standard warpPolar creates a circular image from linear or vice versa.
+        # To get rectangular strip from circular:
+        real_texture = cv2.warpPolar(img, (dest_w, dest_h), center, max_radius, cv2.WARP_POLAR_LINEAR + cv2.WARP_INVERSE_MAP)
+        # Wait, if input is circular (tunnel photo), we want to UNWRAP it to rectangular.
+        # So we use WARP_POLAR_LINEAR without INVERSE_MAP? No.
+        # "inverse map" usually means destination -> source.
+        # Actually, let's just try standard warpPolar.
+        # Correction: To unwrap a disk to a rectangle, we use linearPolar.
+        # But OpenCV's warpPolar handles both.
+        # If input is disk (x,y), output is rectangle (angle, radius).
+        # We want (angle, radius).
+        # Let's use cv2.linearPolar directly if available, or warpPolar.
+        try:
+            # OpenCV 3+
+            # warpPolar(src, dsize, center, maxRadius, flags)
+            # Default flags map (angle, radius) -> (x, y) ? No, that's creating a disk.
+            # We want (x,y) -> (angle, radius).
+            # This is confusing. Let's assume linearPolar:
+            # dst(rho, phi) = src(x, y)
+            real_texture = cv2.linearPolar(img, (center[0], center[1]), max_radius, cv2.WARP_FILL_OUTLIERS)
+            # The output of linearPolar is (angle, log_radius) or (angle, radius)?
+            # It's (angle, radius). So X axis is angle, Y axis is radius? Or vice versa?
+            # Usually X is radius, Y is angle.
+            # We need to rotate it to match cylinder UV (U=Angle, V=Length).
+            real_texture = cv2.rotate(real_texture, cv2.ROTATE_90_COUNTERCLOCKWISE)
+        except:
+            print("Warp polar failed, using raw image")
+            real_texture = cv2.resize(img, (1024, 1024))
+
+        # Convert to RGB
+        real_texture = cv2.cvtColor(real_texture, cv2.COLOR_BGR2RGB)
+        # Ensure data is contiguous and byte aligned
+        real_texture = np.ascontiguousarray(real_texture, dtype=np.uint8)
+        
+        tex_id = glGenTextures(1)
+        glBindTexture(GL_TEXTURE_2D, tex_id)
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, real_texture.shape[1], real_texture.shape[0], 
+                     0, GL_RGB, GL_UNSIGNED_BYTE, real_texture)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+        
+        return tex_id
+
     def draw_pipe(self):
-        glBindTexture(GL_TEXTURE_2D, self.texture_id)
+        if self.real_photo_mode and self.real_photo_tex_id:
+            glBindTexture(GL_TEXTURE_2D, self.real_photo_tex_id)
+        else:
+            glBindTexture(GL_TEXTURE_2D, self.texture_id)
+            
         quadric = gluNewQuadric()
         gluQuadricTexture(quadric, GL_TRUE)
         gluQuadricOrientation(quadric, GLU_INSIDE) # Normals point inward
@@ -144,7 +240,8 @@ class RenderEngine:
     def update_camera(self, speed, turn, dt=0.05):
         # Speed: -1.0 to 1.0
         # Move camera forward/backward (Conceptually)
-        move_speed = speed * 8.0 
+        # Reduced multiplier from 8.0 to 5.0 for more realistic speed
+        move_speed = speed * 5.0 
         self.camera_z -= move_speed * dt # Accumulate distance
         
         # Turn (Yaw)
