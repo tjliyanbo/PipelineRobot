@@ -4,9 +4,25 @@
   "description": "Host Control Software for Pipeline Robot",
   "main": "main.js",
   "scripts": {
-    "start": "electron . --enable-logging --no-sandbox --disable-gpu"
+    "start": "electron . --enable-logging --no-sandbox --disable-gpu",
+    "build": "electron-builder"
   },
-  "dependencies": {
-    "electron": "^28.0.0"
+  "build": {
+    "appId": "com.robotsoft.hostapp",
+    "productName": "Pipeline Robot Control",
+    "win": {
+      "target": ["dir"],
+      "icon": "icon.ico",
+      "verifyUpdateCodeSignature": false,
+      "forceCodeSigning": false,
+      "sign": null
+    },
+    "directories": {
+      "output": "dist"
+    }
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
   }
 }

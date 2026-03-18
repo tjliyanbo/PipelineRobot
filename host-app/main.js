@@ -155,14 +155,11 @@ function sendPacket(cmdId, payload) {
   const length = payloadBuf.length;
   
   const dataToCheck = Buffer.concat([Buffer.from([cmdId]), payloadBuf]);
-  // Use crc32 from zlib (async version is more standard in node, but sync exists in recent versions)
-  // Actually, node's zlib.crc32 is available since v14.17.0, but sometimes it's better to use crc32 package or simple implementation if missing
-  // Let's check if zlib.crc32Sync exists, if not use a polyfill or crc32 library
-  // Electron 28 uses Node 18+, so zlib.crc32 should be there.
-  // Wait, zlib.crc32Sync is NOT a standard node function name. It's zlib.crc32(buffer, [prev]).
-  // BUT zlib.crc32 returns the value directly.
+  // zlib.crc32 was added in Node.js v14.17.0
+  // However, in some Electron environments or older node versions it might be missing or behaves differently
+  // Let's use a simple CRC32 implementation to be safe and dependency-free
   
-  const crc = zlib.crc32(dataToCheck); 
+  const crc = crc32(dataToCheck); 
 
   const packet = Buffer.concat([
     HEADER,
@@ -232,3 +229,23 @@ ipcMain.handle('toggle-recording', () => {
   console.log('IPC: toggle-recording');
   sendPacket(0x13, {});
 });
+
+// Simple CRC32 implementation
+function crc32(buffer) {
+  let crc = -1;
+  for (let i = 0; i < buffer.length; i++) {
+    crc = (crc >>> 8) ^ crcTable[(crc ^ buffer[i]) & 0xFF];
+  }
+  return (crc ^ -1) >>> 0;
+}
+
+const crcTable = new Uint32Array(256);
+(function() {
+  for (let i = 0; i < 256; i++) {
+    let c = i;
+    for (let k = 0; k < 8; k++) {
+      c = ((c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1));
+    }
+    crcTable[i] = c;
+  }
+})();

@@ -8,6 +8,19 @@ import random
 import math
 import os
 
+import sys
+import os
+
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
 class RenderEngine:
     def __init__(self, width=640, height=480):
         self.width = width
@@ -21,7 +34,7 @@ class RenderEngine:
         
         self.init_gl()
         self.texture_id = self.generate_texture()
-        self.real_photo_tex_id = self.load_real_photo('assets/real_sewer.jpg')
+        self.real_photo_tex_id = self.load_real_photo(resource_path('assets/real_sewer.jpg'))
         # Default to True if we have a real photo (assuming load_real_photo returns a valid ID)
         self.real_photo_mode = True if self.real_photo_tex_id else False
         
