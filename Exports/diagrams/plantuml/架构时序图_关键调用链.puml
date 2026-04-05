@@ -1,0 +1,88 @@
+@startuml
+skinparam backgroundColor #121212
+skinparam sequence {
+  ArrowColor #E6F0FF
+  LifeLineBorderColor #E6F0FF
+  LifeLineBackgroundColor #1C1C1C
+  ParticipantBorderColor #E6F0FF
+  ParticipantBackgroundColor #003366
+  ParticipantFontColor #E6F0FF
+  ActorBorderColor #E6F0FF
+  ActorBackgroundColor #1C1C1C
+  ActorFontColor #E6F0FF
+  BoxBorderColor #E6F0FF
+  BoxBackgroundColor #0F0F0F
+  NoteBorderColor #E6F0FF
+  NoteBackgroundColor #0F0F0F
+  NoteFontColor #E6F0FF
+}
+
+title 架构时序图：关键调用链与数据流向（Host↔Simulator）
+
+actor User as 用户
+box "Host App (Electron)" #0F0F0F
+  participant Renderer as 渲染进程\nhost-app/renderer.js
+  participant Preload as 预加载桥\nhost-app/preload.js
+  participant Main as 主进程\nhost-app/main.js
+end box
+box "Slave Simulator (Python)" #0F0F0F
+  participant TCP as TCP服务端\nslave-sim/simulator.py
+  participant Engine as 渲染引擎\nslave-sim/render_engine.py
+  participant UDP as UDP推流\nslave-sim/simulator.py
+end box
+
+== 建立连接与遥测 ==
+用户 -> Renderer : 点击“连接”
+Renderer -> Preload : window.api.connect()
+Preload -> Main : ipcRenderer.invoke('connect')
+Main -> TCP : TCP connect(127.0.0.1:8888)
+TCP --> Main : Accept + 进入 handle_client()
+note over Main,TCP
+真实实现：host-app/main.js 的 connect()/data 解析\nslave-sim/simulator.py 的 asyncio.start_server/handle_client
+end note
+
+loop 5Hz 遥测
+  TCP -> TCP : send_telemetry()\nProtocol.pack(0x80, state)
+  TCP --> Main : TCP data(cmdId=0x80, payload=state)
+  Main -> Renderer : webContents.send('telemetry-data', payload)
+end
+
+alt CRC32 校验失败（异常分支）
+  Main -> Main : 丢弃当前包并等待下一帧\n(解包时 CRC32 校验不通过)
+end
+
+== 视频链路（UDP）==
+用户 -> Renderer : 点击“打开视频”
+Renderer -> Preload : window.api.videoControl(true)
+Preload -> Main : ipcRenderer.invoke('video-control', true)
+Main -> TCP : sendPacket(0x10, {enabled:true})
+TCP -> TCP : process_command(0x10)\nstate.video_enabled = True
+
+loop ~30fps（asyncio.sleep(0.033)）
+  Engine -> Engine : render()\nglReadPixels(640x480)\n-> BGR
+  UDP -> UDP : Letterbox(640x480->320x240)\n+ OSD + JPEG(Q=70)
+  alt 单帧过大（异常分支）
+    UDP -> UDP : drop frame if len(data) >= 60000
+  else 正常推流
+    UDP --> Main : UDP sendto(jpeg_bytes, 8889)
+    Main -> Renderer : webContents.send('video-frame', base64)
+    Renderer -> Renderer : <img>.src = data:image/jpeg;base64,...
+  end
+end
+
+== 场景切换（真实照片/CG）==
+用户 -> Renderer : 点击“真实照片”
+Renderer -> Preload : window.api.toggleRealPhoto()
+Preload -> Main : ipcRenderer.invoke('toggle-real-photo')
+Main -> TCP : sendPacket(0x11, {})
+TCP -> Engine : renderer.real_photo_mode = !real_photo_mode
+
+alt 真实照片资源缺失（异常分支）
+  Engine -> Engine : load_real_photo()\n生成占位图避免崩溃
+end
+
+note bottom
+本图仅覆盖代码中已存在的链路：IPC → TCP 命令 → 渲染/视频管线 → UDP 推流 → IPC 回传。\n读者重点关注：双链路解耦（TCP 控制/遥测 vs UDP 视频）、包头/长度/CRC32 校验的错误隔离、以及 UDP 单帧大小阈值对稳定性的影响。
+end note
+@enduml
+

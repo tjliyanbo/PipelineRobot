@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管道机器人控制系统</title>
+    <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+
+    <header class="app-header">
+        <div class="app-title">
+            <!-- Robot Icon -->
+            <svg class="app-logo" viewBox="0 0 24 24"><path d="M12,2C12,2 8,5 8,9V11H5V13H8V15H6V17H8L8,19C8,21.5 11,22 12,22C13,22 16,21.5 16,19V17H18V15H16V13H19V11H16V9C16,5 12,2 12,2M12,4C13.5,4 14,6 14,8H10C10,6 10.5,4 12,4Z" /></svg>
+            管道机器人控制系统
+        </div>
+    </header>
+
+    <main>
+        <!-- Left: Video Feed -->
+        <div class="panel panel-video">
+            <div class="panel-header">
+                <svg class="icon" viewBox="0 0 24 24" style="color: var(--primary);"><path d="M17,10.5V7A1,1 0 0,0 16,6H4A1,1 0 0,0 3,7V17A1,1 0 0,0 4,18H16A1,1 0 0,0 17,17V13.5L21,17.5V6.5L17,10.5Z" /></svg>
+                实时视频
+            </div>
+            <div id="video-container">
+                <div class="video-frame">
+                    <div class="video-toolbar">
+                        <button id="btn-real-photo" class="toolbar-btn" title="切换真实/CG模式">
+                            <svg viewBox="0 0 24 24"><path d="M21,19V5C21,3.89 20.1,3 19,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19M8.5,13.5L11,16.5L14.5,12L19,18H5L8.5,13.5Z" /></svg>
+                        </button>
+                        <button id="btn-snapshot" class="toolbar-btn" title="截图">
+                            <svg viewBox="0 0 24 24"><path d="M4,4H7L9,2H15L17,4H20A2,2 0 0,1 22,6V18A2,2 0 0,1 20,20H4A2,2 0 0,1 2,18V6A2,2 0 0,1 4,4M12,7A5,5 0 0,0 7,12A5,5 0 0,0 12,17A5,5 0 0,0 17,12A5,5 0 0,0 12,7M12,9A3,3 0 0,1 15,12A3,3 0 0,1 12,15A3,3 0 0,1 9,12A3,3 0 0,1 12,9Z" /></svg>
+                        </button>
+                        <button id="btn-record" class="toolbar-btn" title="录制">
+                            <svg viewBox="0 0 24 24"><path d="M12.5,5A7.5,7.5 0 0,0 5,12.5A7.5,7.5 0 0,0 12.5,20A7.5,7.5 0 0,0 20,12.5A7.5,7.5 0 0,0 12.5,5M7,10H9A1,1 0 0,1 10,11V14A1,1 0 0,1 9,15H7A1,1 0 0,1 6,14V11A1,1 0 0,1 7,10M12.5,10H14.5A1,1 0 0,1 15.5,11V14A1,1 0 0,1 14.5,15H12.5A1,1 0 0,1 11.5,14V11A1,1 0 0,1 12.5,10M18,10H20A1,1 0 0,1 21,11V14A1,1 0 0,1 20,15H18A1,1 0 0,1 17,14V11A1,1 0 0,1 18,10Z" /></svg>
+                        </button>
+                    </div>
+                    <button id="btn-video-aspect" class="video-aspect-btn" title="切换画面比例 (Fill/Fit)">
+                        <!-- Default Icon: Fit (Contain) -> Click to switch to Fill -->
+                         <svg viewBox="0 0 24 24"><path d="M19,12H17V15H14V17H19V12M7,9H5V12H2V14H5V17H7V14H10V12H7V9M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3Z" /></svg>
+                    </button>
+                    <button id="btn-video-toggle" class="video-overlay-btn" aria-label="Toggle Video Stream">
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M17,10.5V7A1,1 0 0,0 16,6H4A1,1 0 0,0 3,7V17A1,1 0 0,0 4,18H16A1,1 0 0,0 17,17V13.5L21,17.5V6.5L17,10.5Z" /></svg>
+                        <span>开启视频</span>
+                    </button>
+                    <img id="video-feed" alt="Video Feed">
+                    <div id="video-placeholder" class="video-placeholder">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" style="opacity: 0.5;">
+                            <path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 10H3V8h2v4h2V8h2v4h2V8h2v4h2V8h2v4h2V8h2v8z"/>
+                        </svg>
+                        <span>等待视频流...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Middle: Sensors -->
+        <div class="panel panel-sensors">
+            <div class="panel-header">
+                <svg class="icon" viewBox="0 0 24 24" style="color: var(--success);"><path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12C4,14.63 5.27,16.96 7.25,18.43L8.67,17C7.03,15.85 6,14.04 6,12A6,6 0 0,1 12,6C14.04,6 15.85,7.03 17,8.67L18.43,7.25C16.96,5.27 14.63,4 12,4M12,8A4,4 0 0,0 8,12C8,13.31 8.63,14.47 9.61,15.21L11.04,13.79C10.39,13.34 10,12.71 10,12A2,2 0 0,1 12,10C12.71,10 13.34,10.39 13.79,11.04L15.21,9.61C14.47,8.63 13.31,8 12,8Z" /></svg>
+                传感器数据
+            </div>
+            <div class="sensors-grid">
+                <div class="sensor-card">
+                    <!-- Thermometer Icon -->
+                    <svg class="sensor-icon-bg" viewBox="0 0 24 24"><path d="M15,13V5A3,3 0 0,0 9,5V13A5,5 0 1,0 15,13M12,4A1,1 0 0,1 13,5V12H11V5A1,1 0 0,1 12,4Z" /></svg>
+                    <div class="sensor-label">
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M15,13V5A3,3 0 0,0 9,5V13A5,5 0 1,0 15,13M12,4A1,1 0 0,1 13,5V12H11V5A1,1 0 0,1 12,4Z" /></svg>
+                        温度 (Temp)
+                    </div>
+                    <div class="sensor-value"><span id="val-temp">--</span><span class="sensor-unit">°C</span></div>
+                </div>
+                <div class="sensor-card">
+                    <!-- Humidity/Water Icon -->
+                    <svg class="sensor-icon-bg" viewBox="0 0 24 24"><path d="M12,20A6,6 0 0,1 6,14C6,10 12,3.25 12,3.25C12,3.25 18,10 18,14A6,6 0 0,1 12,20Z" /></svg>
+                    <div class="sensor-label">
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M12,20A6,6 0 0,1 6,14C6,10 12,3.25 12,3.25C12,3.25 18,10 18,14A6,6 0 0,1 12,20Z" /></svg>
+                        湿度 (Humidity)
+                    </div>
+                    <div class="sensor-value"><span id="val-humidity">--</span><span class="sensor-unit">%</span></div>
+                </div>
+                <div class="sensor-card">
+                    <!-- Pressure Icon -->
+                    <svg class="sensor-icon-bg" viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12H6.9A5.1,5.1 0 0,1 12,6.9V4M12,20A8,8 0 0,0 20,12H17.1A5.1,5.1 0 0,1 12,17.1V20M12,15A3,3 0 0,0 15,12H12V15Z" /></svg>
+                    <div class="sensor-label">
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12H6.9A5.1,5.1 0 0,1 12,6.9V4M12,20A8,8 0 0,0 20,12H17.1A5.1,5.1 0 0,1 12,17.1V20M12,15A3,3 0 0,0 15,12H12V15Z" /></svg>
+                        气压 (Pressure)
+                    </div>
+                    <div class="sensor-value"><span id="val-pressure">--</span><span class="sensor-unit">kPa</span></div>
+                </div>
+                <div class="sensor-card">
+                    <!-- Battery Icon -->
+                    <svg class="sensor-icon-bg" viewBox="0 0 24 24"><path d="M16.67,4H15V2H9V4H7.33A1.33,1.33 0 0,0 6,5.33V20.67C6,21.4 6.6,22 7.33,22H16.67A1.33,1.33 0 0,0 18,20.67V5.33C18,4.6 17.4,4 16.67,4Z" /></svg>
+                    <div class="sensor-label">
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M16.67,4H15V2H9V4H7.33A1.33,1.33 0 0,0 6,5.33V20.67C6,21.4 6.6,22 7.33,22H16.67A1.33,1.33 0 0,0 18,20.67V5.33C18,4.6 17.4,4 16.67,4Z" /></svg>
+                        电池 (Battery)
+                    </div>
+                    <div class="sensor-value"><span id="val-battery">--</span><span class="sensor-unit">%</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Controls -->
+        <div class="panel panel-controls">
+            <div class="panel-header">
+                <!-- Gamepad Icon for Operation Control -->
+                <svg class="icon" viewBox="0 0 24 24" style="color: var(--warning);"><path d="M17,6H7A5,5 0 0,0 2,11A5,5 0 0,0 7,16H17A5,5 0 0,0 22,11A5,5 0 0,0 17,6M7,13.5A2.5,2.5 0 0,1 4.5,11A2.5,2.5 0 0,1 7,8.5A2.5,2.5 0 0,1 9.5,11A2.5,2.5 0 0,1 7,13.5M17,13.5A2.5,2.5 0 0,1 14.5,11A2.5,2.5 0 0,1 17,8.5A2.5,2.5 0 0,1 19.5,11A2.5,2.5 0 0,1 17,13.5Z" /></svg>
+                操作控制
+            </div>
+            <div class="controls-container">
+                <!-- Connection Control Card -->
+                <div class="content-card" style="width: 100%; gap: var(--space-md); align-items: center;">
+                    <div class="status-indicator" style="width: 100%; justify-content: center; background: none; padding: 0;">
+                        <div id="status-dot" class="status-dot"></div>
+                        <span id="status-text">离线</span>
+                    </div>
+                    <button id="btn-connect" class="btn-primary" style="width: 100%;">
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M19,15H13V3H19M11,15H5V3H11M21,3H3A2,2 0 0,0 1,5V19A2,2 0 0,0 3,21H21A2,2 0 0,0 23,19V5A2,2 0 0,0 21,3Z" /></svg>
+                        连接
+                    </button>
+                </div>
+
+                <!-- Motion Control Card -->
+                <div class="content-card" style="flex: 1; width: 100%; align-items: center; justify-content: center; gap: var(--space-lg);">
+                    <div class="d-pad">
+                        <button class="d-pad-btn btn-up" id="btn-forward" title="前进">
+                            <svg class="icon icon-large" viewBox="0 0 24 24"><path d="M7.41,15.41L12,10.83L16.59,15.41L18,14L12,8L6,14L7.41,15.41Z" /></svg>
+                        </button>
+                        <button class="d-pad-btn btn-left" id="btn-left" title="左转">
+                            <svg class="icon icon-large" viewBox="0 0 24 24"><path d="M15.41,16.58L10.83,12L15.41,7.41L14,6L8,12L14,18L15.41,16.58Z" /></svg>
+                        </button>
+                        
+                        <!-- Reset Button -->
+                        <button class="d-pad-btn btn-reset" id="btn-reset" title="复位">
+                            <svg class="icon" viewBox="0 0 24 24" style="margin:0;"><path d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z" /></svg>
+                            <span>复位</span>
+                        </button>
+
+                        <button class="d-pad-btn btn-right" id="btn-right" title="右转">
+                            <svg class="icon icon-large" viewBox="0 0 24 24"><path d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z" /></svg>
+                        </button>
+                        <button class="d-pad-btn btn-down" id="btn-backward" title="后退">
+                            <svg class="icon icon-large" viewBox="0 0 24 24"><path d="M7.41,8.59L12,13.17L16.59,8.59L18,10L12,16L6,10L7.41,8.59Z" /></svg>
+                        </button>
+                    </div>
+
+                    <div class="aux-controls">
+                        <button class="aux-btn" id="btn-light">
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M12,2A7,7 0 0,0 5,9C5,11.38 6.19,13.47 8,14.74V17A1,1 0 0,0 9,18H15A1,1 0 0,0 16,17V14.74C17.81,13.47 19,11.38 19,9A7,7 0 0,0 12,2M9,21A1,1 0 0,0 10,22H14A1,1 0 0,0 15,21V20H9V21Z" /></svg>
+                            照明开关
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer id="log-container">
+        <!-- Logs will appear here -->
+        <div class="log-entry log-success">
+            <span class="log-time">--:--:--</span>
+            <span class="log-content">系统初始化完成</span>
+        </div>
+    </footer>
+
+    <script src="renderer.js"></script>
+</body>
+</html>

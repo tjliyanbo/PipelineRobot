@@ -1,0 +1,64 @@
+{
+  "meta": {
+    "generated_at": "2026-04-05T00:52:55.911Z",
+    "node": "v20.11.0",
+    "platform": "win32 10.0.26200",
+    "cpu": "AMD Ryzen 7 7840H with Radeon 780M Graphics    "
+  },
+  "crc32": [
+    {
+      "payload_bytes": 1024,
+      "baseline_naive": {
+        "mean_us_op": 9.349040000000075,
+        "median_us_op": 9.3,
+        "p95_us_op": 9.5,
+        "throughput_MBps": 104.45591205086214,
+        "heapUsed_bytes": 7374808
+      },
+      "current_lookup_table": {
+        "mean_us_op": 1.766119999999398,
+        "median_us_op": 1.7,
+        "p95_us_op": 1.8,
+        "throughput_MBps": 552.9423255499812,
+        "heapUsed_bytes": 6917288
+      },
+      "heapUsed_bytes_before": 3998808
+    },
+    {
+      "payload_bytes": 4096,
+      "baseline_naive": {
+        "mean_us_op": 38.41259999999866,
+        "median_us_op": 36.8,
+        "p95_us_op": 38,
+        "throughput_MBps": 101.6918927643569,
+        "heapUsed_bytes": 10283752
+      },
+      "current_lookup_table": {
+        "mean_us_op": 6.912143333337132,
+        "median_us_op": 6.6,
+        "p95_us_op": 6.8,
+        "throughput_MBps": 565.1286166419948,
+        "heapUsed_bytes": 8577520
+      },
+      "heapUsed_bytes_before": 7377424
+    },
+    {
+      "payload_bytes": 16384,
+      "baseline_naive": {
+        "mean_us_op": 155.18348000000037,
+        "median_us_op": 148.5,
+        "p95_us_op": 158.8,
+        "throughput_MBps": 100.6872638762835,
+        "heapUsed_bytes": 9218328
+      },
+      "current_lookup_table": {
+        "mean_us_op": 28.148063333339564,
+        "median_us_op": 26.6,
+        "p95_us_op": 29,
+        "throughput_MBps": 555.1003568154259,
+        "heapUsed_bytes": 11583264
+      },
+      "heapUsed_bytes_before": 10285648
+    }
+  ]
+}

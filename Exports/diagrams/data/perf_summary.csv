@@ -1,0 +1,6 @@
+group,metric,baseline,current,unit,scope
+crc32,latency_mean,38.41259999999866,6.912143333337132,us/op,payload=4096B
+crc32,throughput_mean,101.6918927643569,565.1286166419948,MB/s,payload=4096B
+resize,latency_mean,0.05534500002492374,0.06657499989766318,ms/op,640x480 -> 320x240
+jpeg,latency_mean,0.13682066647258276,0.13182566690375097,ms/op,"encode 320x240, q90 vs q70"
+jpeg,size_mean,19.458984375,13.1513671875,KB/frame,"encode 320x240, q90 vs q70"

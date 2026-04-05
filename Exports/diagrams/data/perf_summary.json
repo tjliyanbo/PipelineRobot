@@ -1,0 +1,57 @@
+{
+  "meta": {
+    "generated_at": "2026-04-05T08:58:20+08:00",
+    "sources": [
+      "perf_crc32.json",
+      "perf_video_pipeline.json"
+    ],
+    "notes": [
+      "baseline 字段为对照实现或对照参数组合（不改变当前产品实现）；current 字段为当前实现。",
+      "CRC32 的 current 对应 host-app/main.js 的查表法实现；baseline 为按位计算的对照实现。",
+      "视频链路的 resize current 对应 slave-sim/simulator.py 的 letterbox；baseline 为直接缩放至 320x240 的对照实现。",
+      "JPEG quality=70 为当前实现（slave-sim/simulator.py）；quality=90 为对照参数。"
+    ]
+  },
+  "metrics": [
+    {
+      "group": "crc32",
+      "metric": "latency_mean",
+      "baseline": 38.41259999999866,
+      "current": 6.912143333337132,
+      "unit": "us/op",
+      "scope": "payload=4096B"
+    },
+    {
+      "group": "crc32",
+      "metric": "throughput_mean",
+      "baseline": 101.6918927643569,
+      "current": 565.1286166419948,
+      "unit": "MB/s",
+      "scope": "payload=4096B"
+    },
+    {
+      "group": "resize",
+      "metric": "latency_mean",
+      "baseline": 0.05534500002492374,
+      "current": 0.06657499989766318,
+      "unit": "ms/op",
+      "scope": "640x480 -> 320x240"
+    },
+    {
+      "group": "jpeg",
+      "metric": "latency_mean",
+      "baseline": 0.13682066647258276,
+      "current": 0.13182566690375097,
+      "unit": "ms/op",
+      "scope": "encode 320x240, q90 vs q70"
+    },
+    {
+      "group": "jpeg",
+      "metric": "size_mean",
+      "baseline": 19.458984375,
+      "current": 13.1513671875,
+      "unit": "KB/frame",
+      "scope": "encode 320x240, q90 vs q70"
+    }
+  ]
+}

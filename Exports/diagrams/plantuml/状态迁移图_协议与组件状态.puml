@@ -1,0 +1,52 @@
+@startuml
+skinparam backgroundColor #121212
+skinparam state {
+  BackgroundColor #0F0F0F
+  BorderColor #E6F0FF
+  FontColor #E6F0FF
+  ArrowColor #E6F0FF
+}
+skinparam note {
+  BackgroundColor #0F0F0F
+  BorderColor #E6F0FF
+  FontColor #E6F0FF
+}
+title 状态迁移图：连接/运动/媒体/渲染模式（基于真实状态字段）
+
+[*] --> DISCONNECTED : 启动 Host 或 Simulator\n(尚未建立 TCP)
+DISCONNECTED --> CONNECTED : Host connect()\nTCP accept()
+CONNECTED --> DISCONNECTED : disconnect()/socket close
+
+state CONNECTED {
+  [*] --> IDLE
+  IDLE --> MOVING : Cmd 0x02 且 speed != 0\n(simulator.py:process_command)
+  MOVING --> IDLE : Cmd 0x02 且 speed == 0
+
+  state "视频开关(video_enabled)" as VIDEO {
+    [*] --> VIDEO_OFF
+    VIDEO_OFF --> VIDEO_ON : Cmd 0x10 enabled=true
+    VIDEO_ON --> VIDEO_OFF : Cmd 0x10 enabled=false
+  }
+
+  state "录像开关(recording)" as REC {
+    [*] --> REC_OFF
+    REC_OFF --> REC_ON : Cmd 0x13 toggle\n(开始写入 MP4)
+    REC_ON --> REC_OFF : Cmd 0x13 toggle\n(release writer)
+  }
+
+  state "渲染模式(real_photo_mode)" as MODE {
+    [*] --> CG
+    CG --> REAL_PHOTO : Cmd 0x11 toggle
+    REAL_PHOTO --> CG : Cmd 0x11 toggle
+  }
+}
+
+note right of MOVING
+status 字段真实取值：\nIDLE/MOVING（simulator.py:state["status"]）\n该状态对遥测上报与 OSD 文本可见。
+end note
+
+note bottom
+本图严格对应现有实现：TCP 连接态来自 host-app/main.js 的 connect/disconnect；\n运动态由 simulator.py 的 process_command(0x02) 决定；视频/录像/渲染模式分别由 0x10/0x13/0x11 驱动。\n异常分支（如 CRC 失败、UDP 单帧过大、真实照片缺失）不会改变上述核心状态机，只影响数据帧是否被丢弃或降级显示。
+end note
+@enduml
+

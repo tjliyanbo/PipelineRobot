@@ -1,0 +1,78 @@
+{
+  "meta": {
+    "generated_at": "2026-04-03T10:21:50+08:00",
+    "python": "3.12.10",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "opencv_version": "4.13.0",
+    "source_image": {
+      "path": "slave-sim/assets/real_sewer.jpg",
+      "shape_hwc": [
+        240,
+        320,
+        3
+      ]
+    },
+    "source_frame": {
+      "shape_hwc": [
+        480,
+        640,
+        3
+      ],
+      "note": "用于模拟 render_engine.render() 输出的 640x480 BGR 帧"
+    },
+    "target_frame": {
+      "width": 320,
+      "height": 240
+    }
+  },
+  "resize": {
+    "baseline_direct_resize": {
+      "time_ms_op": {
+        "mean": 0.05534500002492374,
+        "median": 0.054600001021754,
+        "p95": 0.0596999961999245
+      },
+      "memory_bytes": {
+        "current_bytes": 0,
+        "peak_bytes": 230528
+      }
+    },
+    "current_letterbox_resize": {
+      "time_ms_op": {
+        "mean": 0.06657499989766318,
+        "median": 0.06459999713115394,
+        "p95": 0.07809999806340784
+      },
+      "memory_bytes": {
+        "current_bytes": 56,
+        "peak_bytes": 461360
+      }
+    }
+  },
+  "jpeg": {
+    "current_quality_70": {
+      "time_ms_op": {
+        "mean": 0.13182566690375097,
+        "median": 0.12720000086119398,
+        "p95": 0.1556999995955266
+      },
+      "size_kb_frame": {
+        "mean": 13.1513671875,
+        "median": 13.1513671875,
+        "p95": 13.1513671875
+      }
+    },
+    "comparison_quality_90": {
+      "time_ms_op": {
+        "mean": 0.13682066647258276,
+        "median": 0.130899999930989,
+        "p95": 0.18399999680696055
+      },
+      "size_kb_frame": {
+        "mean": 19.458984375,
+        "median": 19.458984375,
+        "p95": 19.458984375
+      }
+    }
+  }
+}
